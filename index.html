@@ -12,16 +12,17 @@
                 .catch(err => console.log("Service Worker Failed", err));
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.1.1/dist/compressor.min.js"></script>
+
 </head>
 <body>
-    <body>
-        <h1>わざわざ用意したテストサイト 感謝しな</h1>
-        
-        <input type="file" id="fileInput" accept="image/*,video/*" multiple>
-        <div id="preview"></div>
+    <h1>わざわざ用意したテストサイト 感謝しな</h1>
     
-        <script src="script.js"></script>
-    </body>
-    
+    <!-- ファイル選択ボタン -->
+    <input type="file" id="fileInput" accept="image/*,video/*" multiple>
+    <div id="preview"></div>
+
+    <script src="script.js"></script>
 </body>
 </html>
