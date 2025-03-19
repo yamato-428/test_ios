@@ -4,9 +4,6 @@
     const BUCKET_NAME = "backups"; // バケット名
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    console.log('FFmpeg:', window.FFmpeg);
-
-
     // ファイル選択後の処理
     document.getElementById("fileInput").addEventListener("change", async function (event) {
         const preview = document.getElementById("preview");
@@ -119,7 +116,7 @@
         }
     }
 
-    const { createFFmpeg, fetchFile } = window.FFmpeg; // 明示的に window.FFmpeg として参照する
+    const { createFFmpeg, fetchFile } = FFmpeg;
 const ffmpeg = createFFmpeg({ log: true });
 
 async function compressVideo(file) {
