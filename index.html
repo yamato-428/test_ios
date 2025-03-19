@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Test</title>
+    <link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log("Service Worker Registered", reg))
+                .catch(err => console.log("Service Worker Failed", err));
+        }
+    </script>
+</head>
+<body>
+    <h1>PWAテストページ</h1>
+    <p>iOS向けのPWAです。</p>
+    <button onclick="alert('ボタンが押されました')">ボタン</button>
+</body>
+</html>
