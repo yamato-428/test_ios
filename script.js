@@ -117,7 +117,7 @@
         }
     }
 
-    const { createFFmpeg, fetchFile } = FFmpeg;
+    const { createFFmpeg, fetchFile } = window.FFmpeg; // 明示的に window.FFmpeg として参照する
 const ffmpeg = createFFmpeg({ log: true });
 
 async function compressVideo(file) {
