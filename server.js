@@ -31,6 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ✅ manifest.json への CORS 設定
 app.get('/manifest.json', (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*"); // すべてのオリジンを許可
+  res.setHeader("Content-Type", "application/manifest+json"); // MIME タイプを明示
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
 
