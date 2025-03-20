@@ -4,6 +4,15 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
 const BUCKET_NAME = "backups";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const { createFFmpeg, fetchFile } = FFmpeg;
+const ffmpeg = createFFmpeg({
+    log: true,
+    wasmOptions: {
+        initial: 256,
+        maximum: 512
+    }
+});
+
 document.getElementById("fileInput").addEventListener("change", async function (event) {
     const preview = document.getElementById("preview");
     preview.innerHTML = "";
@@ -11,17 +20,18 @@ document.getElementById("fileInput").addEventListener("change", async function (
     const files = event.target.files;
     if (!files.length) return;
 
-    const processedFiles = await Promise.all([...files].map(async (file) => {
+    const processedFiles = [];
+    for (let file of files) {
         if (file.type.startsWith("image/")) {
             const compressedFile = await compressImage(file);
-            return { file: compressedFile, name: file.name }; // ファイル名を保存
+            processedFiles.push({ file: compressedFile, name: file.name });
         } else if (file.type.startsWith("video/")) {
             const compressedVideo = await compressVideo(file);
-            return { file: compressedVideo, name: file.name }; // ファイル名を保存
+            processedFiles.push({ file: compressedVideo, name: file.name });
         } else {
-            return { file, name: file.name }; // そのままのファイルも対応
+            processedFiles.push({ file, name: file.name });
         }
-    }));
+    }
 
     // プレビュー表示
     for (let { file, name } of processedFiles) {
@@ -40,7 +50,6 @@ document.getElementById("fileInput").addEventListener("change", async function (
             element.style.width = "150px";
             element.style.margin = "5px";
         }
-
         preview.appendChild(element);
     }
 
@@ -107,22 +116,24 @@ async function uploadZipToSupabase(zipBlob) {
     }
 }
 
-const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true });
-
+// 動画圧縮処理
 async function compressVideo(file) {
-    if (!ffmpeg.isLoaded()) {
-        await ffmpeg.load();
+    try {
+        if (!ffmpeg.isLoaded()) {
+            await ffmpeg.load();
+        }
+        const inputFileName = file.name;
+        const outputFileName = 'compressed_' + inputFileName.replace(/\.[^/.]+$/, "") + '.mp4';
+
+        ffmpeg.FS('writeFile', inputFileName, await fetchFile(file));
+
+        await ffmpeg.run('-i', inputFileName, '-preset', 'ultrafast', '-b:v', '500k', outputFileName);
+
+        const data = ffmpeg.FS('readFile', outputFileName);
+        return new Blob([data.buffer], { type: 'video/mp4' });
+    } catch (error) {
+        console.error('動画圧縮エラー:', error);
+        alert('動画の圧縮に失敗しました');
+        return file; // 失敗した場合は元ファイルをそのまま返す
     }
-
-    const inputFileName = file.name;
-    const outputFileName = 'compressed_' + inputFileName.replace(/\.[^/.]+$/, "") + '.mp4';
-
-    ffmpeg.FS('writeFile', inputFileName, await fetchFile(file));
-
-    await ffmpeg.run('-i', inputFileName, '-vcodec', 'libx264', '-crf', '28', outputFileName);
-
-    const data = ffmpeg.FS('readFile', outputFileName);
-    
-    return new Blob([data.buffer], { type: 'video/mp4' });
 }
