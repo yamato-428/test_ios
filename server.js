@@ -7,37 +7,54 @@ const ffmpeg = require('fluent-ffmpeg');
 const { createClient } = require('@supabase/supabase-js');
 const app = express();
 
-// 🚀 GitHub Codespaces の動的 URL に対応する CORS 設定
+// ✅ CORS 設定（GitHub Codespaces の動的 URL を許可）
 const allowedOrigins = [
-  "https://laughing-orbit-x5xrx5v6jqr6h6rx-3000.app.github.dev",
-  "http://localhost:3000" // ローカル開発用
+  "http://localhost:3000", // ローカル開発
+  /\.app\.github\.dev$/ // GitHub Codespaces の動的サブドメインを許可（正規表現）
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.some(pattern => pattern instanceof RegExp ? pattern.test(origin) : pattern === origin)) {
       callback(null, true);
     } else {
       callback(new Error('CORS エラー: 許可されていないオリジンです'));
     }
-  }
+  },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  allowedHeaders: "Content-Type"
 }));
 
-// 静的ファイルの提供
+// ✅ 静的ファイルを提供（manifest.json も含む）
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Supabase の設定
+// ✅ manifest.json への CORS 設定
+app.get('/manifest.json', (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*"); // すべてのオリジンを許可
+  res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
+// ✅ Supabase の設定
 const SUPABASE_URL = "https://gflvuocpcuiootlumzte.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmbHZ1b2NwY3Vpb290bHVtenRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzOTk0NzMsImV4cCI6MjA1Nzk3NTQ3M30.Psyu6o5j_HbG1kJhqrnnhrnbznArH3JWAE_tJEKdPuA"; // APIキー
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmbHZ1b2NwY3Vpb290bHVtenRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzOTk0NzMsImV4cCI6MjA1Nzk3NTQ3M30.Psyu6o5j_HbG1kJhqrnnhrnbznArH3JWAE_tJEKdPuA";
 const BUCKET_NAME = "backups";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ルートページを提供
+// ✅ ルートページを提供
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// サーバー起動
+// ✅ CORS エラーハンドリング
+app.use((err, req, res, next) => {
+  if (err.message.startsWith('CORS エラー')) {
+    res.status(403).json({ error: err.message });
+  } else {
+    next(err);
+  }
+});
+
+// ✅ サーバー起動
 app.listen(3000, () => {
   console.log("🚀 サーバーが http://localhost:3000 で動作中");
 });
