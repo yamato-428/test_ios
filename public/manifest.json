@@ -2,7 +2,7 @@
   "name": "PWA Test",
   "short_name": "PWA",
   "description": "A test Progressive Web App",
-  "start_url": ".",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
