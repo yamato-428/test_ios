@@ -26,8 +26,8 @@ document.getElementById("fileInput").addEventListener("change", async function (
       const compressedFile = await compressImage(file);
       processedFiles.push(compressedFile);
     } else if (file.type.startsWith("video/")) {
-      // 動画ファイルを圧縮
-      const compressedVideo = await compressVideo(file);
+      // 動画ファイルを分割・圧縮
+      const compressedVideo = await compressAndSplitVideo(file, progressBar);
       processedFiles.push(compressedVideo);
     } else {
       processedFiles.push(file); // 画像・動画以外はそのまま
@@ -135,11 +135,11 @@ async function uploadZipToSupabase(zipBlob) {
   }
 }
 
-// FFmpeg.wasmによる動画圧縮
+// FFmpeg.wasmによる動画圧縮と分割
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 512 * 1024 * 1024 }); // メモリサイズを256MBに設定
+const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 512 * 1024 * 1024 }); // メモリサイズを512MBに設定
 
-async function compressVideo(file) {
+async function compressAndSplitVideo(file, progressBar) {
   // ffmpeg のロード（初回のみ）
   if (!ffmpeg.isLoaded()) {
     await ffmpeg.load();
@@ -147,20 +147,44 @@ async function compressVideo(file) {
 
   const inputFileName = file.name;
   const outputFileName = 'compressed_' + inputFileName.split('.').slice(0, -1).join('.') + '.mp4';
-
+  
   // 入力ファイルをffmpegの仮想ファイルシステムに書き込む
   ffmpeg.FS('writeFile', inputFileName, await fetchFile(file));
 
-  // ffmpeg コマンドの実行例
-  await ffmpeg.run('-i', inputFileName, '-vcodec', 'libx264', '-crf', '28', outputFileName);
+  // 動画の長さ（秒）を取得
+  const duration = await getVideoDuration(inputFileName);
+  const chunkDuration = 30; // 30秒ごとに分割
 
-  // 出力ファイルの読み込み
-  const data = ffmpeg.FS('readFile', outputFileName);
+  const outputFiles = [];
+  
+  for (let start = 0; start < duration; start += chunkDuration) {
+    const chunkFileName = `chunk_${start}.mp4`;
 
-  // 作業が完了した後に入力ファイルと出力ファイルを削除してメモリを解放
+    // 動画を分割して圧縮
+    await ffmpeg.run('-i', inputFileName, '-ss', start.toString(), '-t', chunkDuration.toString(), '-vcodec', 'libx264', '-crf', '28', chunkFileName);
+    
+    // 分割されたファイルを読み込み
+    const data = ffmpeg.FS('readFile', chunkFileName);
+    
+    // Blobに変換して保存
+    outputFiles.push(new Blob([data.buffer], { type: 'video/mp4' }));
+
+    // 作業が完了した後に分割されたファイルを削除してメモリを解放
+    ffmpeg.FS('unlink', chunkFileName);
+  }
+
+  // メモリ解放
   ffmpeg.FS('unlink', inputFileName);
-  ffmpeg.FS('unlink', outputFileName);
 
-  // Blobに変換して返す
-  return new Blob([data.buffer], { type: 'video/mp4' });
+  return outputFiles;
+}
+
+// 動画の長さを取得するヘルパー関数
+async function getVideoDuration(fileName) {
+  await ffmpeg.run('-i', fileName);
+  const logs = ffmpeg.stdout;
+  const durationMatch = logs.find(line => line.includes('Duration'));
+  const durationString = durationMatch ? durationMatch.split(' ')[1] : '00:00:00';
+  const [hours, minutes, seconds] = durationString.split(':').map(Number);
+  return hours * 3600 + minutes * 60 + seconds;
 }
