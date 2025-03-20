@@ -137,7 +137,7 @@ async function uploadZipToSupabase(zipBlob) {
 
 // FFmpeg.wasmによる動画圧縮と分割
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 512 * 1024 * 1024 }); // メモリサイズを512MBに設定
+const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 1024 * 1024 * 1024 }); // メモリサイズを512MBに設定
 
 async function compressAndSplitVideo(file, progressBar) {
   // ffmpeg のロード（初回のみ）
@@ -153,7 +153,7 @@ async function compressAndSplitVideo(file, progressBar) {
 
   // 動画の長さ（秒）を取得
   const duration = await getVideoDuration(inputFileName);
-  const chunkDuration = 30; // 30秒ごとに分割
+  const chunkDuration = 10; // 30秒ごとに分割
 
   const outputFiles = [];
   
