@@ -1,6 +1,6 @@
 // Supabaseの設定
 const SUPABASE_URL = "https://gflvuocpcuiootlumzte.supabase.co"; // あなたのSupabase URL
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmbHZ1b2NwY3Vpb290bHVtenRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzOTk0NzMsImV4cCI6MjA1Nzk3NTQ3M30.Psyu6o5j_HbG1kJhqrnnhrnbznArH3JWAE_tJEKdPuA"; // あなたのAPIキー
+const SUPABASE_ANON_KEY = "your_supabase_anon_key"; // あなたのAPIキー
 const BUCKET_NAME = "backups"; // バケット名
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -131,13 +131,13 @@ async function uploadZipToSupabase(zipBlob, progressBar) {
     alert(`アップロード成功！`);
   } catch (error) {
     console.error('アップロードエラー:', error);
-    alert('アップロードに失敗しました');
+    alert(`アップロードに失敗しました: ${error.message}`);
   }
 }
 
 // FFmpeg.wasmによる動画圧縮と分割
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 2*1024 * 1024 * 1024 }); // メモリサイズを2GBに設定
+const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 2 * 1024 * 1024 * 1024 }); // メモリサイズを2GBに設定
 
 async function compressAndSplitVideo(file, progressBar) {
   // ffmpeg のロード（初回のみ）
@@ -157,7 +157,7 @@ async function compressAndSplitVideo(file, progressBar) {
 
   const outputFiles = [];
 
-  // 解像度を指定する例（1280x720）
+  // 解像度を指定する例（854x480）
   const resolution = '854x480'; // 解像度を変更したい場合はこの値を変更
 
   for (let start = 0; start < duration; start += chunkDuration) {
