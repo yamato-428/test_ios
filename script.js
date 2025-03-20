@@ -12,6 +12,12 @@ document.getElementById("fileInput").addEventListener("change", async function (
   const files = event.target.files;
   if (!files.length) return;
 
+  // 進捗表示要素
+  const progressBar = document.createElement('progress');
+  progressBar.max = 100;
+  progressBar.value = 0;
+  preview.appendChild(progressBar);
+
   // 画像・動画の圧縮処理とプレビュー表示
   const processedFiles = [];
   for (let file of files) {
@@ -50,7 +56,7 @@ document.getElementById("fileInput").addEventListener("change", async function (
   }
 
   // ZIP圧縮処理
-  const zipBlob = await createZip(processedFiles);
+  const zipBlob = await createZip(processedFiles, progressBar);
 
   // ZIPをダウンロードリンクとして表示
   const zipUrl = URL.createObjectURL(zipBlob);
@@ -83,12 +89,20 @@ async function compressImage(file) {
   });
 }
 
-// ZIPファイルを作成する関数
-async function createZip(files) {
+// ZIPファイルを作成する関数（進捗表示対応）
+async function createZip(files, progressBar) {
   const zip = new JSZip();
+  let totalFiles = files.length;
+  let processedFiles = 0;
+
   for (let file of files) {
     zip.file(file.name, file);
+    processedFiles++;
+    
+    // 進捗更新
+    progressBar.value = (processedFiles / totalFiles) * 100;
   }
+
   return await zip.generateAsync({ type: "blob" });
 }
 
