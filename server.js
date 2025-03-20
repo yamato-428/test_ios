@@ -11,20 +11,13 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.some(pattern => pattern instanceof RegExp ? pattern.test(origin) : pattern === origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS エラー: 許可されていないオリジンです'));
-    }
-  },
+  origin: "*",  // 🔥 一時的にすべてのオリジンを許可
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "Content-Type"
 }));
 
-// ✅ 静的ファイル提供時に CORS ヘッダーを付与するミドルウェア
 app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Access-Control-Allow-Origin", "*");  // 🔥 すべてのオリジンを許可
   next();
 });
 
