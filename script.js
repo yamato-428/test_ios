@@ -137,7 +137,7 @@ async function uploadZipToSupabase(zipBlob) {
 
 // FFmpeg.wasmによる動画圧縮
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 256 * 1024 * 1024 }); // メモリサイズを256MBに設定
+const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 512 * 1024 * 1024 }); // メモリサイズを256MBに設定
 
 async function compressVideo(file) {
   // ffmpeg のロード（初回のみ）
@@ -156,6 +156,10 @@ async function compressVideo(file) {
 
   // 出力ファイルの読み込み
   const data = ffmpeg.FS('readFile', outputFileName);
+
+  // 作業が完了した後に入力ファイルと出力ファイルを削除してメモリを解放
+  ffmpeg.FS('unlink', inputFileName);
+  ffmpeg.FS('unlink', outputFileName);
 
   // Blobに変換して返す
   return new Blob([data.buffer], { type: 'video/mp4' });
