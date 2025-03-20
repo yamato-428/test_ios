@@ -137,7 +137,7 @@ async function uploadZipToSupabase(zipBlob) {
 
 // FFmpeg.wasmによる動画圧縮と分割
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 1024 * 1024 * 1024 }); // メモリサイズを512MBに設定
+const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 2*1024 * 1024 * 1024 }); // メモリサイズを512MBに設定
 
 async function compressAndSplitVideo(file, progressBar) {
   // ffmpeg のロード（初回のみ）
