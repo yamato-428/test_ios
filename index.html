@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#4CAF50"> <!-- アプリのテーマカラー -->
+    <meta name="description" content="PWA Test App for file compression and uploading to Supabase.">
     <title>PWA Test</title>
+
+    <!-- PWA マニフェスト -->
     <link rel="manifest" href="manifest.json">
+
+    <!-- Service Worker -->
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js')
@@ -12,11 +18,12 @@
                 .catch(err => console.log("Service Worker Failed", err));
         }
     </script>
+
+    <!-- 必要な外部ライブラリ -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.1.1/dist/compressor.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@latest/dist/ffmpeg.min.js"></script>
-
 
 </head>
 <body>
@@ -24,8 +31,11 @@
     
     <!-- ファイル選択ボタン -->
     <input type="file" id="fileInput" accept="image/*,video/*" multiple>
+    
+    <!-- プレビュー表示領域 -->
     <div id="preview"></div>
 
+    <!-- JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
