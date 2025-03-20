@@ -153,7 +153,7 @@ async function compressAndSplitVideo(file, progressBar) {
 
   // 動画の長さ（秒）を取得
   const duration = await getVideoDuration(inputFileName);
-  const chunkDuration = 10; // 30秒ごとに分割
+  const chunkDuration = 5; // 30秒ごとに分割
 
   const outputFiles = [];
   
