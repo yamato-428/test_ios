@@ -95,15 +95,21 @@ async function createZip(files, progressBar) {
   let totalFiles = files.length;
   let processedFiles = 0;
 
-  for (let file of files) {
+  // ファイルをZIPに追加
+  files.forEach((file, index) => {
     zip.file(file.name, file);
-    processedFiles++;
-    
-    // 進捗更新
-    progressBar.value = (processedFiles / totalFiles) * 100;
-  }
+  });
 
-  return await zip.generateAsync({ type: "blob" });
+  // 進捗表示
+  const zipBlob = await zip.generateAsync({
+    type: "blob",
+    progress: function (progress) {
+      // 進捗更新
+      progressBar.value = progress.percent; // 圧縮進捗を反映
+    }
+  });
+
+  return zipBlob;
 }
 
 // SupabaseにZIPファイルをアップロードする関数
