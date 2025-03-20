@@ -1,9 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
-const fs = require('fs');
 const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
 const { createClient } = require('@supabase/supabase-js');
 const app = express();
 
@@ -29,9 +26,16 @@ app.use(cors({
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ✅ manifest.json への CORS 設定
+app.options('/manifest.json', (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.sendStatus(204);
+});
+
 app.get('/manifest.json', (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*"); // すべてのオリジンを許可
-  res.setHeader("Content-Type", "application/manifest+json"); // MIME タイプを明示
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Content-Type", "application/manifest+json");
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
 
