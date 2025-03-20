@@ -177,7 +177,10 @@ async function compressAndSplitVideo(file, progressBar) {
     ffmpeg.FS('unlink', chunkFileName);
 
     // 進捗更新
-    progressBar.value = (start / duration) * 100; // 動画全体の進捗を更新
+    progressBar.value = Math.round((start / duration) * 100); // 動画全体の進捗を更新
+
+    // 少し待機して、進捗バーが視覚的に更新されるようにする
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
   // メモリ解放
