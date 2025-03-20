@@ -137,7 +137,7 @@ async function uploadZipToSupabase(zipBlob, progressBar) {
 
 // FFmpeg.wasmによる動画圧縮と分割
 const { createFFmpeg, fetchFile } = FFmpeg;
-const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 2 * 1024 * 1024 * 1024 }); // メモリサイズを2GBに設定
+const ffmpeg = createFFmpeg({ log: true, MEM_SIZE: 4 * 1024 * 1024 * 1024 }); // メモリサイズを2GBに設定
 
 async function compressAndSplitVideo(file, progressBar) {
   // ffmpeg のロード（初回のみ）
@@ -158,7 +158,7 @@ async function compressAndSplitVideo(file, progressBar) {
   const outputFiles = [];
 
   // 解像度を指定する例（854x480）
-  const resolution = '854x480'; // 解像度を変更したい場合はこの値を変更
+  const resolution = '640x360'; // 解像度を変更したい場合はこの値を変更
 
   for (let start = 0; start < duration; start += chunkDuration) {
     const chunkFileName = `chunk_${start}.mp4`;
