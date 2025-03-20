@@ -22,17 +22,16 @@ app.use(cors({
   allowedHeaders: "Content-Type"
 }));
 
+// ✅ 静的ファイル提供時に CORS ヘッダーを付与するミドルウェア
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  next();
+});
+
 // ✅ 静的ファイルを提供（manifest.json も含む）
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ✅ manifest.json への CORS 設定
-app.options('/manifest.json', (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.sendStatus(204);
-});
-
 app.get('/manifest.json', (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
   res.setHeader("Content-Type", "application/manifest+json");
