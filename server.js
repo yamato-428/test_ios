@@ -11,15 +11,16 @@ const app = express();
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ✅ CORS 設定
-const allowedOrigins = [
-  "http://localhost:3000", // ローカル開発用
-  /\.app\.github\.dev$/ // GitHub Codespaces の動的サブドメインを許可
-];
-
 app.use(cors({
-  origin: "*",  // すべてのオリジンを一時的に許可
+  origin: (origin, callback) => {
+    if (!origin || /^(http:\/\/localhost:3000|https:\/\/.*\.github\.dev)$/.test(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORSポリシーによりブロックされました'));
+    }
+  },
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: "Content-Type"
+  allowedHeaders: "Content-Type",
 }));
 
 app.use((req, res, next) => {
@@ -51,13 +52,17 @@ app.get('/', (req, res) => {
 
 // ✅ 動画処理ルート
 app.post('/process-video', upload.single('video'), async (req, res) => {
-  const inputFilePath = req.file.path; // アップロードされた動画のパス
+  const inputFilePath = req.file ? req.file.path : null;
   const outputFileName = `compressed_${Date.now()}.mp4`;
   const outputFilePath = `uploads/${outputFileName}`;
 
+  if (!inputFilePath) {
+    console.error('動画がアップロードされていません');
+    return res.status(400).json({ error: '動画がアップロードされていません。' });
+  }
+
   try {
     console.log('動画処理を開始します...');
-    // 動画を圧縮・リサイズ
     await new Promise((resolve, reject) => {
       ffmpeg(inputFilePath)
         .output(outputFilePath)
@@ -72,8 +77,7 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
         .run();
     });
 
-    console.log('動画処理が完了しました。Supabaseにアップロードを開始します...');
-    // 圧縮動画をSupabaseにアップロード
+    console.log('Supabase へのアップロードを開始します...');
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(`processed_videos/${outputFileName}`, fs.readFileSync(outputFilePath), {
@@ -81,31 +85,33 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
       });
 
     if (error) {
-      console.error('Supabaseアップロードエラー:', error);
+      console.error('Supabase アップロードエラー:', error);
       throw error;
     }
 
-    // 一時ファイルの削除
     fs.unlinkSync(inputFilePath);
     fs.unlinkSync(outputFilePath);
 
-    console.log('すべての処理が完了しました。');
-    // 処理完了メッセージを返す
-    res.json({ message: '動画の処理とアップロードが完了しました！' });
+    res.json({ message: '動画の処理とアップロードが正常に完了しました。' });
   } catch (err) {
-    console.error('動画処理中にエラーが発生しました:', err);
-
-    // エラー時のレスポンス
+    console.error('処理中にエラーが発生:', err);
     res.status(500).json({ error: '動画の処理中にエラーが発生しました。' });
   }
 });
 
 // ✅ manifest.json への CORS 設定
 app.get('/manifest.json', (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Content-Type", "application/manifest+json");
-  console.log("manifest.jsonへのリクエストを受けました");
-  res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+  const manifestPath = path.join(__dirname, 'public', 'manifest.json');
+  console.log(`manifest.json へのリクエストがありました: パス - ${manifestPath}`);
+  
+  if (fs.existsSync(manifestPath)) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Type", "application/manifest+json");
+    res.sendFile(manifestPath);
+  } else {
+    console.error('manifest.json が見つかりませんでした。');
+    res.status(404).json({ error: 'manifest.json が見つかりませんでした。' });
+  }
 });
 
 // ✅ サーバー起動
