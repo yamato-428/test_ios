@@ -24,11 +24,16 @@ app.use(cors({
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
+  console.log(`リクエスト: ${req.method} ${req.url}`); // リクエストログを出力
   next();
 });
 
-// ✅ 静的ファイルを提供
-app.use(express.static(path.join(__dirname, 'public')));
+// ✅ 静的ファイルの提供 (CORSヘッダーを追加)
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res) => {
+    res.set('Access-Control-Allow-Origin', '*'); // すべてのオリジンを許可
+  }
+}));
 
 // ✅ Supabase の設定
 const SUPABASE_URL = "https://gflvuocpcuiootlumzte.supabase.co";
@@ -51,6 +56,7 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
   const outputFilePath = `uploads/${outputFileName}`;
 
   try {
+    console.log('動画処理を開始します...');
     // 動画を圧縮・リサイズ
     await new Promise((resolve, reject) => {
       ffmpeg(inputFilePath)
@@ -59,10 +65,14 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
         .size('640x360') // 解像度を変更
         .outputOptions('-crf 28') // 圧縮品質
         .on('end', resolve)
-        .on('error', reject)
+        .on('error', (err) => {
+          console.error('FFmpegエラー:', err);
+          reject(err);
+        })
         .run();
     });
 
+    console.log('動画処理が完了しました。Supabaseにアップロードを開始します...');
     // 圧縮動画をSupabaseにアップロード
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
@@ -70,16 +80,20 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
         contentType: 'video/mp4',
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabaseアップロードエラー:', error);
+      throw error;
+    }
 
     // 一時ファイルの削除
     fs.unlinkSync(inputFilePath);
     fs.unlinkSync(outputFilePath);
 
+    console.log('すべての処理が完了しました。');
     // 処理完了メッセージを返す
     res.json({ message: '動画の処理とアップロードが完了しました！' });
   } catch (err) {
-    console.error(err);
+    console.error('動画処理中にエラーが発生しました:', err);
 
     // エラー時のレスポンス
     res.status(500).json({ error: '動画の処理中にエラーが発生しました。' });
@@ -88,7 +102,7 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
 
 // ✅ manifest.json への CORS 設定
 app.get('/manifest.json', (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", req.headers.origin || "*");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "application/manifest+json");
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
