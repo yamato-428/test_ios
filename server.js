@@ -12,26 +12,26 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 // ✅ CORS 設定
 const allowedOrigins = [
-  "http://localhost:3000", // ローカル開発
+  "http://localhost:3000", // ローカル開発用
   /\.app\.github\.dev$/ // GitHub Codespaces の動的サブドメインを許可
 ];
 
 app.use(cors({
-  origin: "*",  // 🔥 一時的にすべてのオリジンを許可
+  origin: "*",  // すべてのオリジンを一時的に許可
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   allowedHeaders: "Content-Type"
 }));
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  console.log(`リクエスト: ${req.method} ${req.url}`); // リクエストログを出力
+  console.log(`リクエスト: ${req.method} ${req.url}`); // リクエストの詳細をログ出力
   next();
 });
 
-// ✅ 静的ファイルの提供 (CORSヘッダーを追加)
+// ✅ 静的ファイルの提供 (CORSヘッダー追加)
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*'); // すべてのオリジンを許可
+    res.set('Access-Control-Allow-Origin', '*'); // 静的ファイルにCORS許可
   }
 }));
 
@@ -104,6 +104,7 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
 app.get('/manifest.json', (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Type", "application/manifest+json");
+  console.log("manifest.jsonへのリクエストを受けました");
   res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
 });
 
