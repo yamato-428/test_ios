@@ -10,12 +10,13 @@ const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const app = express();
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-// ✅ CORS 設定
+// ✅ CORS 設定のさらなる拡張
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || /^(http:\/\/localhost:3000|https:\/\/.*\.github\.dev)$/.test(origin)) {
+    if (!origin || /^(http:\/\/localhost:3000|https:\/\/.*\.github\.dev|https:\/\/.*\.github\.io|https:\/\/github\.dev)$/.test(origin)) {
       callback(null, true);
     } else {
+      console.warn(`CORSポリシーによりブロックされたオリジン: ${origin}`);
       callback(new Error('CORSポリシーによりブロックされました'));
     }
   },
@@ -25,14 +26,14 @@ app.use(cors({
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  console.log(`リクエスト: ${req.method} ${req.url}`); // リクエストの詳細をログ出力
+  console.log(`[DEBUG] リクエスト: ${req.method} ${req.url}`);
   next();
 });
 
 // ✅ 静的ファイルの提供 (CORSヘッダー追加)
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res) => {
-    res.set('Access-Control-Allow-Origin', '*'); // 静的ファイルにCORS許可
+    res.set('Access-Control-Allow-Origin', '*');
   }
 }));
 
@@ -43,7 +44,7 @@ const BUCKET_NAME = "backups";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ✅ ファイルアップロード設定
-const upload = multer({ dest: 'uploads/' }); // 一時保存用ディレクトリ
+const upload = multer({ dest: 'uploads/' });
 
 // ✅ ルートページを提供
 app.get('/', (req, res) => {
@@ -57,27 +58,27 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
   const outputFilePath = `uploads/${outputFileName}`;
 
   if (!inputFilePath) {
-    console.error('動画がアップロードされていません');
+    console.error('[ERROR] 動画がアップロードされていません');
     return res.status(400).json({ error: '動画がアップロードされていません。' });
   }
 
   try {
-    console.log('動画処理を開始します...');
+    console.log('[INFO] 動画処理を開始します...');
     await new Promise((resolve, reject) => {
       ffmpeg(inputFilePath)
         .output(outputFilePath)
         .videoCodec('libx264')
-        .size('640x360') // 解像度を変更
-        .outputOptions('-crf 28') // 圧縮品質
+        .size('640x360')
+        .outputOptions('-crf 28')
         .on('end', resolve)
         .on('error', (err) => {
-          console.error('FFmpegエラー:', err);
+          console.error('[ERROR] FFmpegエラー:', err);
           reject(err);
         })
         .run();
     });
 
-    console.log('Supabase へのアップロードを開始します...');
+    console.log('[INFO] Supabaseへのアップロードを開始します...');
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(`processed_videos/${outputFileName}`, fs.readFileSync(outputFilePath), {
@@ -85,7 +86,7 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
       });
 
     if (error) {
-      console.error('Supabase アップロードエラー:', error);
+      console.error('[ERROR] Supabaseアップロードエラー:', error);
       throw error;
     }
 
@@ -94,7 +95,7 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
 
     res.json({ message: '動画の処理とアップロードが正常に完了しました。' });
   } catch (err) {
-    console.error('処理中にエラーが発生:', err);
+    console.error('[ERROR] 処理中にエラーが発生:', err);
     res.status(500).json({ error: '動画の処理中にエラーが発生しました。' });
   }
 });
@@ -102,15 +103,17 @@ app.post('/process-video', upload.single('video'), async (req, res) => {
 // ✅ manifest.json への CORS 設定
 app.get('/manifest.json', (req, res) => {
   const manifestPath = path.join(__dirname, 'public', 'manifest.json');
-  console.log(`manifest.json へのリクエストがありました: パス - ${manifestPath}`);
+  console.log(`[DEBUG] manifest.jsonへのリクエスト: ${JSON.stringify(req.headers)}`);
   
   if (fs.existsSync(manifestPath)) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", "application/manifest+json");
-    res.sendFile(manifestPath);
+    res.sendFile(manifestPath, (err) => {
+      if (err) console.error(`[ERROR] manifest.json送信中にエラー: ${err.message}`);
+    });
   } else {
-    console.error('manifest.json が見つかりませんでした。');
-    res.status(404).json({ error: 'manifest.json が見つかりませんでした。' });
+    console.error('[ERROR] manifest.jsonが見つかりませんでした');
+    res.status(404).json({ error: 'manifest.jsonが見つかりませんでした。' });
   }
 });
 
